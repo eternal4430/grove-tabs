@@ -32,7 +32,7 @@ Extensions can't hide or restyle the tab strip. Chromium 152+ can move it to the
 
 ### Tiling window managers
 
-On Wayland, Chromium can't position its own windows, so the standalone panel window needs a compositor rule. Its title is `Grove panel (right) · <active tab title>` (or `(left)`); the tab title lets the hook find the browser window, whose title is `<active tab title> - Chromium`. For Hyprland 0.55+ (Lua config), a `window.title` hook that floats, sizes and docks it inside the browser window lives in `~/.config/hypr/hyprland.lua` on the machine this was built on; static window rules don't work here because Chromium sets the title only after the window maps.
+On Wayland, Chromium can't position its own windows, so the standalone panel window needs a compositor rule. Its title is `Grove panel (right) · <active tab title>` (or `(left)`); the tab title lets the hook find the browser window, whose title is `<active tab title> - Chromium`. For Hyprland 0.55+ (Lua config), [`contrib/hyprland-grove.lua`](contrib/hyprland-grove.lua) floats the window from the moment it maps (matching its class, `chrome-<extension id>-<profile>`, which is known before the title), keeps it invisible while a `window.title` hook docks it inside its browser window, then fades it in, so it never flashes as a tiled window. GNOME and KDE on Wayland would need their own equivalent; on X11, Windows and macOS Chromium positions it itself.
 
 ## Design
 
