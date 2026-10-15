@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grove settings</title>
+  <link rel="stylesheet" href="themes.css">
+  <style>
+    body { padding: 40px 16px 72px; }
+    main { max-width: 640px; margin: 0 auto; }
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+    header img { border-radius: 9px; }
+    h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: 0.2px; }
+    .lead { margin: 2px 0 0; color: var(--mute); }
+    section { margin-bottom: 14px; padding: 18px 20px; border: 1px solid var(--hairline); border-radius: var(--r-xl); background: var(--surface); }
+    h2 { margin: 0 0 14px; color: var(--mute); font-size: 11.5px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; }
+    .field { display: grid; gap: 6px; margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+    .field > span { font-weight: 500; }
+    .hint { color: var(--mute); font-size: 12px; }
+    .field-input { width: 100%; }
+    textarea.field-input { height: auto; min-height: 120px; padding: 10px 12px; font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; resize: vertical; }
+    .check { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 34px; margin-bottom: 10px; font-weight: 500; cursor: pointer; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; }
+    .keys { display: grid; grid-template-columns: max-content 1fr; gap: 10px 18px; align-items: center; margin: 0; }
+    .keys dt { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .keys dd { margin: 0; color: var(--body); }
+    .kbd { height: 22px; min-width: 22px; font-size: 11.5px; }
+    code { padding: 1px 6px; border-radius: var(--r-xs); background: var(--elevated); font-size: 12px; }
+    #status { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 8px 14px; border: 1px solid var(--hairline-strong); border-radius: var(--r-lg); background: var(--card); box-shadow: var(--shadow); font-weight: 500; }
+    #status:empty { display: none; }
+  </style>
+  <script type="module" src="options.js"></script>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icons/icon48.png" alt="" width="40" height="40">
+    <div>
+      <h1>Grove settings</h1>
+      <p class="lead">Changes save as you make them.</p>
+    </div>
+  </header>
+
+  <section>
+    <h2>Appearance</h2>
+    <label class="field">
+      <span>Theme</span>
+      <select id="theme" class="field-input">
+        <option value="system">Match system (Paper / Ink)</option>
+        <option value="paper">Paper</option>
+        <option value="ink">Ink</option>
+        <option value="moss">Moss</option>
+        <option value="sakura">Sakura</option>
+        <option value="slate">Slate</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Panel position</span>
+      <select id="side" class="field-input">
+        <option value="right">Right side of the window</option>
+        <option value="left">Left side of the window</option>
+      </select>
+    </label>
+    <label class="check">Show tabs from all windows in the panel<input type="checkbox" class="switch" id="allWindows"></label>
+  </section>
+
+  <section>
+    <h2>Recently closed tabs</h2>
+    <label class="check">Keep closed tabs visible in the tree<input type="checkbox" class="switch" id="showClosed"></label>
+    <label class="field">
+      <span>Keep them for</span>
+      <select id="retentionHours" class="field-input">
+        <option value="12">12 hours</option>
+        <option value="24">24 hours</option>
+        <option value="72">3 days</option>
+        <option value="168">7 days</option>
+        <option value="0">Until I remove them</option>
+      </select>
+    </label>
+  </section>
+
+  <section>
+    <h2>Site exclusions</h2>
+    <label class="field">
+      <span>Keep these sites out of the tree</span>
+      <textarea id="exclusions" class="field-input" spellcheck="false" placeholder="mail.google.com&#10;example.com"></textarea>
+      <span class="hint">One domain per line. A domain also covers its subdomains.</span>
+    </label>
+  </section>
+
+  <section>
+    <h2>Sessions</h2>
+    <label class="field">
+      <span>Default restore mode</span>
+      <select id="restoreMode" class="field-input">
+        <option value="replace">Replace this window</option>
+        <option value="new">Open in new window</option>
+        <option value="merge">Add to this window</option>
+        <option value="windows">Restore original windows</option>
+      </select>
+    </label>
+    <div class="row">
+      <button type="button" class="btn" id="export">Export snapshots</button>
+      <button type="button" class="btn" id="import">Import snapshots…</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+    </div>
+  </section>
+
+  <section>
+    <h2>Keyboard</h2>
+    <dl class="keys">
+      <dt><span class="kbd">Ctrl</span>+<span class="kbd">Shift</span>+<span class="kbd">E</span></dt><dd>Open or close the panel</dd>
+      <dt><span class="kbd">↑</span> <span class="kbd">↓</span> <span class="kbd">Home</span> <span class="kbd">End</span></dt><dd>Move between tabs</dd>
+      <dt><span class="kbd">←</span> <span class="kbd">→</span></dt><dd>Collapse / expand, or go to parent / first child</dd>
+      <dt><span class="kbd">Enter</span></dt><dd>Switch to tab, or reopen a closed one</dd>
+      <dt><span class="kbd">Delete</span> (Mac: <span class="kbd">⌘</span><span class="kbd">⌫</span>)</dt><dd>Close tab (<span class="kbd">Shift</span> closes its children too)</dd>
+      <dt><span class="kbd">Alt</span>+<span class="kbd">↑</span> <span class="kbd">↓</span></dt><dd>Move tab among its siblings</dd>
+      <dt><span class="kbd">Alt</span>+<span class="kbd">→</span> <span class="kbd">←</span></dt><dd>Indent under the tab above / outdent</dd>
+      <dt><span class="kbd">N</span></dt><dd>New child tab (on a group header: new tab in the group)</dd>
+      <dt><span class="kbd">G</span> or <span class="kbd">Alt</span>+<span class="kbd">G</span> in search</dt><dd>Put the tab (and its children) in a new group</dd>
+      <dt><span class="kbd">Shift</span>+<span class="kbd">F10</span> or right-click</dt><dd>Tab menu: add to a group, remove from group, close; on a group: rename, colour, move, ungroup</dd>
+      <dt><span class="kbd">/</span> or start typing</dt><dd>Search</dd>
+      <dt><span class="kbd">Esc</span></dt><dd>Clear search, then close the panel</dd>
+    </dl>
+    <p class="hint" style="margin: 16px 0 0">Change the panel shortcut, or add one for Houdini mode, at <code>chrome://extensions/shortcuts</code>. If another extension already uses <span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">E</span>, Chromium won’t give it to Grove until you free it there.</p>
+  </section>
+
+  <p id="status" role="status"></p>
+</main>
+</body>
+</html>

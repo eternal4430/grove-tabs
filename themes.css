@@ -1,0 +1,369 @@
+/* Grove design tokens. Structure follows a command-palette system: a four-step surface
+   ladder for depth, hairline borders, 6–14px radii, Inter with ss03, keycap hints.
+   Five themes share the same tokens; "system" resolves to ink or paper in JS. */
+
+@font-face {
+  font-family: 'Inter Grove';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+  src: url('fonts/inter-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter Grove';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+  src: url('fonts/inter-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 10px;
+  --r-xl: 14px;
+  --font: 'Inter Grove', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Chromium's nine tab-group colours: light tints for dark themes, deeper ones for light. */
+:root {
+  --g-grey: #a8acb3;
+  --g-blue: #8ab4f8;
+  --g-red: #f28b82;
+  --g-yellow: #fdd663;
+  --g-green: #81c995;
+  --g-pink: #ff8bcb;
+  --g-purple: #c58af9;
+  --g-cyan: #78d9ec;
+  --g-orange: #fcad70;
+}
+
+:root[data-theme='paper'],
+:root[data-theme='sakura'] {
+  --g-grey: #5f6368;
+  --g-blue: #1a73e8;
+  --g-red: #d93025;
+  --g-yellow: #b06000;
+  --g-green: #188038;
+  --g-pink: #d01884;
+  --g-purple: #9334e6;
+  --g-cyan: #007b83;
+  --g-orange: #c5590e;
+}
+
+/* Ink: near-black ladder, green accent. The default dark theme. */
+:root,
+:root[data-theme='ink'] {
+  --canvas: #0e0f11;
+  --surface: #141518;
+  --elevated: #1a1b1f;
+  --card: #212226;
+  --hairline: #26282c;
+  --hairline-strong: rgb(255 255 255 / 0.12);
+  --highlight: rgb(255 255 255 / 0.05);
+  --ink: #f4f4f6;
+  --body: #cdcdcf;
+  --mute: #9c9c9e;
+  --ash: #6a6b6d;
+  --guide: rgb(255 255 255 / 0.07);
+  --accent: #59d499;
+  --accent-soft: rgb(89 212 153 / 0.14);
+  --accent-ring: rgb(89 212 153 / 0.55);
+  --primary: #ffffff;
+  --primary-pressed: #e4e4e6;
+  --on-primary: #0e0f11;
+  --warn: #ffc533;
+  --warn-soft: rgb(255 197 51 / 0.13);
+  --danger: #ff6161;
+  --danger-soft: rgb(255 97 97 / 0.14);
+  --shadow: 0 24px 60px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+
+/* Moss: green-tinted charcoal, closest to a forest canopy. */
+:root[data-theme='moss'] {
+  --canvas: #141a17;
+  --surface: #19201c;
+  --elevated: #1f2823;
+  --card: #26302a;
+  --hairline: #2c3731;
+  --hairline-strong: rgb(220 255 230 / 0.12);
+  --highlight: rgb(220 255 230 / 0.05);
+  --ink: #eef5f0;
+  --body: #ccd8d0;
+  --mute: #93a499;
+  --ash: #66766c;
+  --guide: rgb(220 255 230 / 0.08);
+  --accent: #7fd99a;
+  --accent-soft: rgb(127 217 154 / 0.15);
+  --accent-ring: rgb(127 217 154 / 0.55);
+  --primary: #e9f7ec;
+  --primary-pressed: #d3eadb;
+  --on-primary: #10180f;
+  --warn: #f2c94c;
+  --warn-soft: rgb(242 201 76 / 0.14);
+  --danger: #ff7b72;
+  --danger-soft: rgb(255 123 114 / 0.15);
+  --shadow: 0 24px 60px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+
+/* Slate: cool blue-grey ladder, sky accent. */
+:root[data-theme='slate'] {
+  --canvas: #13161c;
+  --surface: #181c23;
+  --elevated: #1e232b;
+  --card: #252b35;
+  --hairline: #2a313c;
+  --hairline-strong: rgb(200 220 255 / 0.13);
+  --highlight: rgb(200 220 255 / 0.05);
+  --ink: #edf1f7;
+  --body: #c9d1dd;
+  --mute: #8f9aab;
+  --ash: #646f80;
+  --guide: rgb(200 220 255 / 0.08);
+  --accent: #57c1ff;
+  --accent-soft: rgb(87 193 255 / 0.15);
+  --accent-ring: rgb(87 193 255 / 0.55);
+  --primary: #ffffff;
+  --primary-pressed: #e3e8ef;
+  --on-primary: #0f141c;
+  --warn: #ffc533;
+  --warn-soft: rgb(255 197 51 / 0.13);
+  --danger: #ff6b6b;
+  --danger-soft: rgb(255 107 107 / 0.15);
+  --shadow: 0 24px 60px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+
+/* Paper: warm off-white ladder for light mode. */
+:root[data-theme='paper'] {
+  --canvas: #fafaf8;
+  --surface: #ffffff;
+  --elevated: #f3f3f0;
+  --card: #ecece8;
+  --hairline: #e4e4df;
+  --hairline-strong: rgb(0 0 0 / 0.12);
+  --highlight: rgb(255 255 255 / 0.8);
+  --ink: #18181a;
+  --body: #3a3a3d;
+  --mute: #6e6e72;
+  --ash: #9a9a9e;
+  --guide: rgb(0 0 0 / 0.07);
+  --accent: #1f9d63;
+  --accent-soft: rgb(31 157 99 / 0.11);
+  --accent-ring: rgb(31 157 99 / 0.5);
+  --primary: #18181a;
+  --primary-pressed: #2c2c30;
+  --on-primary: #ffffff;
+  --warn: #a86b00;
+  --warn-soft: rgb(222 150 0 / 0.13);
+  --danger: #c4312b;
+  --danger-soft: rgb(196 49 43 / 0.1);
+  --shadow: 0 24px 60px rgb(20 20 30 / 0.18), 0 2px 8px rgb(20 20 30 / 0.08);
+  color-scheme: light;
+}
+
+/* Sakura: blush light ladder, rose accent. */
+:root[data-theme='sakura'] {
+  --canvas: #fcf7f8;
+  --surface: #ffffff;
+  --elevated: #f8eef1;
+  --card: #f3e3e8;
+  --hairline: #efdfe4;
+  --hairline-strong: rgb(90 20 40 / 0.13);
+  --highlight: rgb(255 255 255 / 0.8);
+  --ink: #2b1d22;
+  --body: #4a3940;
+  --mute: #86707a;
+  --ash: #ad99a1;
+  --guide: rgb(90 20 40 / 0.08);
+  --accent: #c2476b;
+  --accent-soft: rgb(194 71 107 / 0.11);
+  --accent-ring: rgb(194 71 107 / 0.5);
+  --primary: #2b1d22;
+  --primary-pressed: #3f2c33;
+  --on-primary: #ffffff;
+  --warn: #a35f00;
+  --warn-soft: rgb(222 150 0 / 0.13);
+  --danger: #c4312b;
+  --danger-soft: rgb(196 49 43 / 0.1);
+  --shadow: 0 24px 60px rgb(60 20 30 / 0.18), 0 2px 8px rgb(60 20 30 / 0.08);
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font: 400 13px/1.45 var(--font);
+  font-feature-settings: 'calt', 'kern', 'liga', 'ss03';
+  letter-spacing: 0.1px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Shared controls */
+.kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-xs);
+  background: linear-gradient(var(--card), var(--elevated));
+  box-shadow: inset 0 1px 0 var(--highlight), 0 1px 0 rgb(0 0 0 / 0.15);
+  color: var(--mute);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-md);
+  background: var(--elevated);
+  box-shadow: inset 0 1px 0 var(--highlight);
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, transform 0.08s;
+}
+
+.btn:hover {
+  background: var(--card);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn.primary {
+  border-color: transparent;
+  background: var(--primary);
+  box-shadow: none;
+  color: var(--on-primary);
+}
+
+.btn.primary:hover {
+  background: var(--primary-pressed);
+}
+
+.field-input {
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--elevated);
+  color: var(--ink);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.field-input:hover {
+  border-color: var(--hairline-strong);
+}
+
+.field-input:focus,
+.field-input:focus-visible {
+  border-color: var(--accent-ring);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
+
+select.field-input {
+  appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 6.5 8 10l3.5-3.5' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 9px center;
+  background-repeat: no-repeat;
+  background-size: 14px;
+}
+
+select.field-input option {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* Toggle switch built on a checkbox */
+.switch {
+  appearance: none;
+  position: relative;
+  width: 30px;
+  height: 18px;
+  margin: 0;
+  flex: none;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--mute);
+  transition: transform 0.15s var(--ease), background 0.15s;
+}
+
+.switch:checked {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.switch:checked::after {
+  background: var(--on-primary);
+  transform: translateX(12px);
+}
+
+[hidden] {
+  display: none !important;
+}

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Grove</title>
+  <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="panel.css">
+  <script type="module" src="panel.js"></script>
+</head>
+<body>
+  <svg aria-hidden="true" style="display: none">
+    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-hat" viewBox="0 0 16 16"><path d="M5.25 3h5.5v6.75h-5.5zM2.5 10.25h11M5.25 7.25h5.5" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" fill="none"/><path d="M4.5 12.75h7" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></symbol>
+    <symbol id="i-more" viewBox="0 0 16 16"><circle cx="3.75" cy="8" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="12.25" cy="8" r="1.2"/></symbol>
+    <symbol id="i-x" viewBox="0 0 16 16"><path d="M4.75 4.75l6.5 6.5M11.25 4.75l-6.5 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-twisty" viewBox="0 0 16 16"><path d="M6.25 4.5 9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 16 16"><circle cx="6" cy="4" r="1.15"/><circle cx="10" cy="4" r="1.15"/><circle cx="6" cy="8" r="1.15"/><circle cx="10" cy="8" r="1.15"/><circle cx="6" cy="12" r="1.15"/><circle cx="10" cy="12" r="1.15"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M8 5.25V8.2l1.9 1.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 16 16"><path d="M6 2.5h4l-.6 3.6 2.3 2.4H4.3l2.3-2.4zM8 8.5V13.5" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 16 16"><path d="M2.5 6.25h2.25L8 3.5v9L4.75 9.75H2.5z" fill="currentColor"/><path d="M10.75 5.75a3.25 3.25 0 0 1 0 4.5" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-muted" viewBox="0 0 16 16"><path d="M2.5 6.25h2.25L8 3.5v9L4.75 9.75H2.5z" fill="currentColor"/><path d="M10.5 6.25l3 3.5M13.5 6.25l-3 3.5" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 16 16"><path d="M3 13l.6-2.6 7.1-7.1 2 2-7.1 7.1zM9.6 4.4l2 2" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" fill="none"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.25" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="m10.25 10.25 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-collapse" viewBox="0 0 16 16"><path d="M4.5 3.5 8 6.75l3.5-3.25M4.5 12.5 8 9.25l3.5 3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 16 16"><path d="M4.5 6.25 8 3l3.5 3.25M4.5 9.75 8 13l3.5-3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.35" fill="none"/><path d="M8 1.75v1.5M8 12.75v1.5M14.25 8h-1.5M3.25 8h-1.5M12.4 3.6l-1.06 1.06M4.66 11.34 3.6 12.4M12.4 12.4l-1.06-1.06M4.66 4.66 3.6 3.6" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></symbol>
+    <symbol id="i-broom" viewBox="0 0 16 16"><path d="M10.5 2.5 7.25 8.5M4.25 8.5h6l1 5h-8z M6 13.5l.5-2.5M8.5 13.5V11" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-save" viewBox="0 0 16 16"><path d="M8 3v7M5 7.25 8 10.25l3-3M3.5 12.75h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 16 16"><path d="M1.75 8S4 3.75 8 3.75 14.25 8 14.25 8 12 12.25 8 12.25 1.75 8 1.75 8z" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" fill="none"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.35" fill="none"/></symbol>
+    <symbol id="i-tabs" viewBox="0 0 16 16"><path d="M3 13V8M6.33 13V5M9.67 13V7M13 13V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="10" rx="2" stroke="currentColor" stroke-width="1.35" fill="none"/><path d="M2.5 6.75h11M5.5 2v3M10.5 2v3" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 16 16"><path d="M9.75 3.75 5.5 8l4.25 4.25" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+    <symbol id="i-restore" viewBox="0 0 16 16"><path d="M2.5 5.5V12a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1H8L6.5 3.5h-3a1 1 0 0 0-1 1z" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" fill="none"/></symbol>
+    <symbol id="i-group-add" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5" stroke="currentColor" stroke-width="1.35" fill="none"/><path d="M8 5.5v5M5.5 8h5" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></symbol>
+    <symbol id="i-ungroup" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5" stroke="currentColor" stroke-width="1.35" stroke-dasharray="2.2 2" fill="none"/><path d="M6 10l4-4M7 6h3v3" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+    <symbol id="i-window" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="2" stroke="currentColor" stroke-width="1.35" fill="none"/><path d="M2.5 6.25h11" stroke="currentColor" stroke-width="1.35"/></symbol>
+  </svg>
+
+  <div class="shell">
+    <header class="head">
+      <div class="brand">
+        <img src="icons/icon32.png" alt="" width="18" height="18">
+        <span>Grove</span>
+      </div>
+      <div class="tools">
+        <button id="collapse-all" class="tool" type="button" title="Collapse all" aria-label="Collapse all"><svg><use href="#i-collapse"/></svg></button>
+        <button id="expand-all" class="tool" type="button" title="Expand all" aria-label="Expand all"><svg><use href="#i-expand"/></svg></button>
+        <button id="houdini" class="tool" type="button" aria-pressed="false" title="Houdini mode: new visits stay out of history" aria-label="Houdini mode"><svg><use href="#i-hat"/></svg></button>
+        <button id="new-tab" class="tool" type="button" title="New tab" aria-label="New tab"><svg><use href="#i-plus"/></svg></button>
+        <details class="menu">
+          <summary class="tool" title="More" aria-label="More options"><svg><use href="#i-more"/></svg></summary>
+          <div class="menu-list" role="group" aria-label="More options">
+            <label class="menu-item"><span>Show recently closed</span><input type="checkbox" class="switch" id="show-closed"></label>
+            <label class="menu-item"><span>Show all windows</span><input type="checkbox" class="switch" id="all-windows"></label>
+            <label class="menu-item"><span>Dock panel on the left</span><input type="checkbox" class="switch" id="dock-left"></label>
+            <hr>
+            <button type="button" class="menu-item" data-cmd="clear-closed"><svg><use href="#i-broom"/></svg><span>Clear recently closed</span></button>
+            <button type="button" class="menu-item" data-cmd="settings"><svg><use href="#i-gear"/></svg><span>Settings</span></button>
+          </div>
+        </details>
+      </div>
+    </header>
+
+    <div class="seg" role="tablist" aria-label="Views">
+      <button id="tab-tree" class="seg-btn" role="tab" type="button" aria-selected="true" aria-controls="tree-pane">Tab Tree <span id="tab-count" class="seg-count"></span></button>
+      <button id="tab-sessions" class="seg-btn" role="tab" type="button" aria-selected="false" aria-controls="sessions-view" tabindex="-1">Snapshots <span id="snap-count" class="seg-count"></span></button>
+    </div>
+
+    <div id="houdini-banner" class="banner" hidden>
+      <svg><use href="#i-hat"/></svg>
+      <span>Houdini mode is on. New visits stay out of history.</span>
+    </div>
+
+    <div id="tree-pane" class="pane" role="tabpanel" aria-labelledby="tab-tree">
+      <div class="search-row">
+        <label class="search">
+          <svg class="search-icon"><use href="#i-search"/></svg>
+          <span class="sr-only">Search tabs by title or URL</span>
+          <input id="search" type="search" placeholder="Search tabs…" autocomplete="off" spellcheck="false">
+          <span id="search-hint" class="kbd" aria-hidden="true">/</span>
+        </label>
+        <button id="search-clear" class="tool" type="button" title="Clear search" aria-label="Clear search"><svg><use href="#i-x"/></svg></button>
+      </div>
+      <main id="tree-view">
+        <div id="tree" role="tree" aria-label="Tabs"></div>
+        <p id="empty" class="empty" hidden></p>
+      </main>
+    </div>
+
+    <section id="sessions-view" class="pane" role="tabpanel" aria-labelledby="tab-sessions" hidden>
+      <form id="save-form" class="save-card">
+        <div class="save-title">Save a snapshot</div>
+        <input id="snap-name" class="field-input" placeholder="Name (optional)" aria-label="Snapshot name">
+        <div class="save-row">
+          <select id="snap-scope" class="field-input" aria-label="What to save">
+            <option value="window">This window</option>
+            <option value="all">All windows</option>
+          </select>
+          <button type="submit" class="btn primary"><svg><use href="#i-save"/></svg>Save</button>
+        </div>
+      </form>
+      <div id="undo-bar" class="undo-bar" hidden>
+        <span>Snapshot restored.</span>
+        <button id="undo" type="button" class="btn">Undo</button>
+      </div>
+      <ul id="snap-list" class="snap-list"></ul>
+      <div id="snap-detail" class="snap-detail" role="region" hidden></div>
+    </section>
+
+    <footer class="foot">
+      <span id="foot-status" class="foot-status"></span>
+      <span class="foot-keys" aria-hidden="true">
+        <span><span class="kbd">↑↓</span> select</span>
+        <span><span class="kbd">↵</span> open</span>
+        <span><span class="kbd" data-mac="⌘⌫">Del</span> close</span>
+        <span><span class="kbd" data-mac="⌥">Alt</span><span class="kbd">↑↓</span> move</span>
+      </span>
+    </footer>
+  </div>
+
+  <div id="popover" class="popover" hidden></div>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <div id="live" class="sr-only" aria-live="polite"></div>
+</body>
+</html>

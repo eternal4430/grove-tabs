@@ -1,0 +1,40 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Unit tests
+        run: node --test tests/tree.test.mjs
+
+      # Branded Chrome 137+ ignores --load-extension; Chrome for Testing still honours it.
+      - name: Install Chrome for Testing
+        id: chrome
+        shell: bash
+        # A fresh install prints nothing, so locate the binary by its per-OS layout.
+        run: |
+          npx -y @puppeteer/browsers@2 install chrome@stable --path "$RUNNER_TEMP/browsers"
+          bin=$(find "$RUNNER_TEMP/browsers" -type f \( -path '*chrome-linux64/chrome' -o -path '*chrome-win64/chrome.exe' -o -path '*MacOS/Google Chrome for Testing' \) | head -n 1)
+          test -n "$bin" || { echo "Chrome for Testing binary not found"; exit 1; }
+          echo "path=$bin" >> "$GITHUB_OUTPUT"
+
+      - name: End-to-end tests
+        shell: bash
+        run: node tests/e2e.mjs "${{ steps.chrome.outputs.path }}"
