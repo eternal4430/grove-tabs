@@ -85,25 +85,36 @@ svg {
   color: var(--accent);
 }
 
-.menu {
-  position: relative;
+/* Native popovers (the ⋯ menu and the tab/group popover). Reset the UA popover styles, show
+   them only while open, and place them with CSS anchor positioning: below their anchor,
+   flipping up or sideways when they would run off the panel. */
+.menu-list,
+.popover {
+  inset: auto;
+  margin: 0;
+  overflow: visible;
+  color: var(--body);
 }
 
-.menu summary::-webkit-details-marker {
-  display: none;
+.menu-list:popover-open,
+.popover:popover-open {
+  display: flex;
 }
 
-.menu[open] summary {
+#more-btn {
+  anchor-name: --grove-more;
+}
+
+#more-btn:has(+ #more-menu:popover-open) {
   color: var(--ink);
   background: var(--card);
 }
 
 .menu-list {
-  position: absolute;
-  right: 0;
-  top: 36px;
-  z-index: 20;
-  display: flex;
+  position-anchor: --grove-more;
+  position-area: block-end span-inline-start;
+  position-try-fallbacks: flip-block;
+  margin-block-start: 6px;
   flex-direction: column;
   min-width: 230px;
   padding: 5px;
@@ -1122,10 +1133,22 @@ main {
 }
 
 /* Popover: tab context menu and group editor */
-.popover {
+.pop-anchor {
+  anchor-name: --grove-pop;
+}
+
+#pointer-anchor {
   position: fixed;
-  z-index: 40;
-  display: flex;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.popover {
+  position-anchor: --grove-pop;
+  position-area: block-end span-inline-end;
+  position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+  margin-block: 4px;
   flex-direction: column;
   width: 264px;
   padding: 5px;

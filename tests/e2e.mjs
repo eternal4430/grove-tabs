@@ -458,14 +458,14 @@ try {
       const p = document.getElementById('popover');
       const items = [...p.querySelectorAll('[role=menuitem]')].map((i) => i.textContent);
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      return { items, closed: p.hidden };
+      return { items, closed: !p.matches(':popover-open') };
     })()`);
     assert.ok(menu.items.includes('Add to new group') && menu.items.includes('Remove from group'), JSON.stringify(menu.items));
     assert.equal(menu.closed, true, 'Escape closes the menu');
     const viaButton = await evaluate(panel.sessionId, `(() => {
       const row = [...document.querySelectorAll('.row')].find((r) => r.querySelector('.title')?.textContent === 'Page grouptwo');
       row.querySelector('.row-more').click();
-      const open = !document.getElementById('popover').hidden;
+      const open = document.getElementById('popover').matches(':popover-open');
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       return open;
     })()`);
@@ -512,6 +512,82 @@ try {
     await send('groupUngroup', { groupId: gid });
     assert.equal((await state()).windows[0].groups.length, 0);
     await evaluate(panel.sessionId, `chrome.tabs.remove([${g1}, ${g2}])`);
+  });
+
+  await step('restart copy of the tree is saved even if the worker stops before its timer', async () => {
+    const swT = () => cdp('Target.getTargets').then((r) => r.targetInfos.find((t) => t.type === 'service_worker' && t.url.includes(extId)));
+    const local = (k) => evaluate(panel.sessionId, `chrome.storage.local.get('${k}').then((r) => r['${k}'])`);
+    const session = (k) => evaluate(panel.sessionId, `chrome.storage.session.get('${k}').then((r) => r['${k}'])`);
+    // Normal path: a change marks the tree dirty and arms the backup alarm; the 1 s write clears both.
+    await send('toggleCollapse', { tabId: ta.id, collapsed: true });
+    assert.equal(await session('treeDirty'), true);
+    assert.ok(await evaluate(panel.sessionId, `chrome.alarms.get('persist-tree').then((a) => !!a)`), 'backup alarm armed');
+    await until(async () => (await session('treeDirty')) === false, 'timer write');
+    assert.equal(await evaluate(panel.sessionId, `chrome.alarms.get('persist-tree').then((a) => !!a)`), false, 'alarm cleared after write');
+    await send('toggleCollapse', { tabId: ta.id, collapsed: false });
+    await until(async () => (await session('treeDirty')) === false, 'second write');
+    // Recovery path: a pending write whose worker stops before the timer fires.
+    await evaluate(panel.sessionId, `Promise.all([chrome.storage.local.remove('savedTree'), chrome.storage.session.set({ treeDirty: true })]).then(() => true)`);
+    const before = await swT();
+    await cdp('Target.closeTarget', { targetId: before.targetId }).catch(() => {});
+    await until(async () => (await swT())?.targetId !== before.targetId, 'worker to stop');
+    await send('getState', { windowId: winId }); // wakes a fresh worker
+    const saved = await until(local.bind(null, 'savedTree'), 'fresh worker to finish the pending write');
+    assert.ok(saved.flat().some((e) => e.url === site('a')), 'saved tree has the open tabs');
+    assert.equal(await session('treeDirty'), false);
+  });
+
+  await step('native popovers: anchored, flip at the edge, light-dismiss, menu toggles', async () => {
+    await cdp('Target.activateTarget', { targetId: panel.targetId });
+    await cdp('Emulation.setDeviceMetricsOverride', { width: 400, height: 600, deviceScaleFactor: 1, mobile: false }, panel.sessionId);
+    await sleep(200);
+    const geo = (sel) => evaluate(panel.sessionId, `(() => { const r = document.querySelector('${sel}').getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), left: Math.round(r.left), right: Math.round(r.right) }; })()`);
+    const open = (id) => evaluate(panel.sessionId, `document.getElementById('${id}').matches(':popover-open')`);
+    const click = async (x, y) => {
+      for (const type of ['mousePressed', 'mouseReleased']) await cdp('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 }, panel.sessionId);
+    };
+    // ⋯ menu: opens declaratively below its button, right-aligned to it.
+    const btn = await geo('#more-btn');
+    await click((btn.left + btn.right) / 2, (btn.top + btn.bottom) / 2);
+    await until(() => open('more-menu'), 'more menu open');
+    await sleep(250); // let the 0.14 s scale-in animation finish before measuring
+    const m = await geo('#more-menu');
+    assert.ok(m.top >= btn.bottom && m.top <= btn.bottom + 10 && Math.abs(m.right - btn.right) <= 1, `menu under button ${JSON.stringify({ btn, m })}`);
+    await click((btn.left + btn.right) / 2, (btn.top + btn.bottom) / 2);
+    await until(async () => !(await open('more-menu')), 'button click toggles it closed');
+    // Right-click near the bottom edge: the popover flips above the pointer and stays on screen.
+    await evaluate(panel.sessionId, `(() => { const r = document.querySelector('.row'); r.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 300, clientY: 590 })); })()`);
+    await until(() => open('popover'), 'context popover');
+    await sleep(250); // let the 0.14 s scale-in animation finish before measuring
+    const low = await geo('#popover');
+    assert.ok(low.bottom <= 600 && low.bottom <= 590, `flipped above pointer ${JSON.stringify(low)}`);
+    assert.ok(low.right <= 400, 'flipped inline to stay on screen');
+    // A real click outside light-dismisses it.
+    await click(200, 30);
+    await until(async () => !(await open('popover')), 'light dismiss');
+    await until(async () => (await evaluate(panel.sessionId, `document.getElementById('popover').childElementCount`)) === 0, 'cleanup after light dismiss (async toggle event)');
+    // Row ⋯ button: anchored to the button; clicking it again closes instead of reopening.
+    await evaluate(panel.sessionId, `document.querySelector('.row')?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))`);
+    const rb = await evaluate(panel.sessionId, `(() => { const b = [...document.querySelectorAll('.row-more')][0]; b.style.opacity = 1; const r = b.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, bottom: r.bottom }; })()`);
+    await click(rb.x, rb.y);
+    await until(() => open('popover'), 'row menu');
+    await sleep(250); // let the 0.14 s scale-in animation finish before measuring
+    const rp = await geo('#popover');
+    assert.ok(rp.top >= rb.bottom && rp.top <= rb.bottom + 8, `row menu under its button ${JSON.stringify({ rb, rp })}`);
+    if (process.env.SHOTS) {
+      const { writeFileSync: write } = await import('node:fs');
+      write(join(process.env.SHOTS, 'popover-row.png'), Buffer.from((await cdp('Page.captureScreenshot', { format: 'png' }, panel.sessionId)).data, 'base64'));
+    }
+    await click(rb.x, rb.y);
+    await sleep(200);
+    assert.equal(await open('popover'), false, 'second click on the same button closes it');
+    if (process.env.SHOTS) {
+      const { writeFileSync: write } = await import('node:fs');
+      await click((btn.left + btn.right) / 2, (btn.top + btn.bottom) / 2);
+      await sleep(250);
+      write(join(process.env.SHOTS, 'popover-more.png'), Buffer.from((await cdp('Page.captureScreenshot', { format: 'png' }, panel.sessionId)).data, 'base64'));
+      await click((btn.left + btn.right) / 2, (btn.top + btn.bottom) / 2);
+    }
   });
 
   await step('keyboard navigation and live region in the panel', async () => {

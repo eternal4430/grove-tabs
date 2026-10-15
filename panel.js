@@ -668,34 +668,36 @@ $('houdini').addEventListener('click', () => {
 $('collapse-all').addEventListener('click', () => act(() => send('setCollapsedAll', { windowId, collapsed: true }), 'Collapsed all'));
 $('expand-all').addEventListener('click', () => act(() => send('setCollapsedAll', { windowId, collapsed: false }), 'Expanded all'));
 
-const menu = document.querySelector('.menu');
-menu.addEventListener('click', (e) => {
+// The ⋯ menu is a native popover (popovertarget on #more-btn): the browser handles opening,
+// light dismiss and top-layer stacking; CSS anchor positioning places it.
+const moreMenu = $('more-menu');
+const isOpen = (popover) => popover.matches(':popover-open');
+moreMenu.addEventListener('click', (e) => {
   const cmd = e.target.closest('[data-cmd]')?.dataset.cmd;
   if (!cmd) return;
-  menu.open = false;
+  moreMenu.hidePopover();
   if (cmd === 'clear-closed') act(() => send('clearClosed'), 'Cleared recently closed tabs');
   if (cmd === 'settings') {
     chrome.runtime.openOptionsPage();
     dismiss();
   }
 });
-document.addEventListener('click', (e) => {
-  if (menu.open && !menu.contains(e.target)) menu.open = false;
-});
 $('show-closed').addEventListener('change', (e) => act(() => send('setSettings', { patch: { showClosed: e.target.checked } })));
 $('all-windows').addEventListener('change', (e) => act(() => send('setSettings', { patch: { allWindows: e.target.checked } })));
 $('dock-left').addEventListener('change', (e) =>
   act(() => send('setSettings', { patch: { side: e.target.checked ? 'left' : 'right' } }), e.target.checked ? 'Panel docked left' : 'Panel docked right'));
 
-// Escape peels back one layer at a time: menu, then search (handled on the input), then the panel.
+// Escape peels back one layer at a time: popover or menu, then search (handled on the
+// input), then the panel. Handled here rather than by the popovers' own Escape so focus
+// returns where it came from.
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape' || e.defaultPrevented) return;
   e.preventDefault();
-  if (!popEl.hidden) {
+  if (isOpen(popEl)) {
     closePopover();
-  } else if (menu.open) {
-    menu.open = false;
-    menu.querySelector('summary').focus();
+  } else if (isOpen(moreMenu)) {
+    moreMenu.hidePopover();
+    $('more-btn').focus();
   } else if (detailId) {
     closeDetail();
   } else {
@@ -738,32 +740,58 @@ $('save-form').addEventListener('submit', (e) => {
 
 $('undo').addEventListener('click', () => act(() => send('undoRestore'), 'Restore undone'));
 
-// Popover: the tab context menu and the group editor share one floating surface.
+// Popover: the tab context menu and the group editor share one native popover. It is anchored
+// with CSS anchor positioning (see .popover in panel.css) to the row or button it opened
+// from, or to #pointer-anchor at the mouse position for a right-click; the browser flips it
+// to stay on screen and closes it on an outside click (light dismiss).
 const popEl = $('popover');
+const pointerAnchor = $('pointer-anchor');
 let popReturn = null;
+let popAnchor = null;
+let dismissedAnchor = null; // anchor of a popover the last pointerdown light-dismissed
 
-function closePopover({ restoreFocus = true } = {}) {
-  if (popEl.hidden) return;
-  popEl.hidden = true;
+function cleanupPopover(restoreFocus) {
   popEl.replaceChildren();
+  popAnchor?.classList.remove('pop-anchor');
+  popAnchor = null;
   if (restoreFocus) (popReturn?.isConnected ? popReturn : searchEl).focus();
   popReturn = null;
 }
 
+function closePopover({ restoreFocus = true } = {}) {
+  if (!isOpen(popEl)) return;
+  popEl.hidePopover();
+  cleanupPopover(restoreFocus);
+}
+
+// Light dismiss closes it without going through closePopover; tidy up unless it reopened.
+popEl.addEventListener('toggle', (e) => {
+  if (e.newState === 'closed' && !isOpen(popEl) && popEl.childElementCount) cleanupPopover(false);
+});
+
+// Clicking the button that opened the popover should close it, not close-then-reopen it.
+document.addEventListener('pointerdown', (e) => {
+  dismissedAnchor = isOpen(popEl) && !popEl.contains(e.target) ? popAnchor : null;
+}, true);
+
 function openPopover(children, anchor, { role = 'menu', label }) {
-  if (!popEl.hidden) closePopover({ restoreFocus: false });
+  const target = anchor instanceof Element ? anchor : pointerAnchor;
+  if (target !== pointerAnchor && target === dismissedAnchor) {
+    dismissedAnchor = null;
+    return;
+  }
+  if (isOpen(popEl)) closePopover({ restoreFocus: false });
   popReturn = document.activeElement;
+  if (target === pointerAnchor) {
+    pointerAnchor.style.left = `${anchor.left}px`;
+    pointerAnchor.style.top = `${anchor.top}px`;
+  }
+  target.classList.add('pop-anchor');
+  popAnchor = target;
   popEl.replaceChildren(...children.filter(Boolean));
   popEl.setAttribute('role', role);
   popEl.setAttribute('aria-label', label);
-  popEl.hidden = false;
-  const r = anchor instanceof Element ? anchor.getBoundingClientRect() : anchor;
-  const { offsetWidth: w, offsetHeight: h } = popEl;
-  const left = Math.max(8, Math.min(r.left + (anchor instanceof Element ? 24 : 0), innerWidth - w - 8));
-  let top = r.bottom + 4;
-  if (top + h > innerHeight - 8) top = Math.max(8, r.top - h - 4);
-  popEl.style.left = `${left}px`;
-  popEl.style.top = `${top}px`;
+  popEl.showPopover();
   (popEl.querySelector('[data-autofocus]') || popEl.querySelector('[role=menuitem]'))?.focus();
 }
 
@@ -780,12 +808,6 @@ function menuItem(icon, label, onSelect, { dot } = {}) {
 }
 
 popEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    e.preventDefault();
-    e.stopPropagation();
-    closePopover();
-    return;
-  }
   const items = [...popEl.querySelectorAll('[role=menuitem]')];
   const i = items.indexOf(document.activeElement);
   if (i < 0 || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Home' && e.key !== 'End')) return;
@@ -794,9 +816,6 @@ popEl.addEventListener('keydown', (e) => {
   items[(next + items.length) % items.length].focus();
 });
 
-document.addEventListener('pointerdown', (e) => {
-  if (!popEl.hidden && !popEl.contains(e.target)) closePopover({ restoreFocus: false });
-});
 
 function windowOf(row) {
   return state.windows.find((w) => w.id === +row.dataset.win);

@@ -49,17 +49,15 @@
         <button id="houdini" class="tool" type="button" aria-pressed="false" title="Houdini mode: new visits stay out of history" aria-label="Houdini mode"><svg><use href="#i-hat"/></svg></button>
         <button id="toggle-closed" class="tool" type="button" aria-pressed="true" title="Hide recently closed tabs" aria-label="Show recently closed tabs"><svg><use href="#i-clock"/></svg></button>
         <button id="new-tab" class="tool" type="button" title="New tab" aria-label="New tab"><svg><use href="#i-plus"/></svg></button>
-        <details class="menu">
-          <summary class="tool" title="More" aria-label="More options"><svg><use href="#i-more"/></svg></summary>
-          <div class="menu-list" role="group" aria-label="More options">
+        <button id="more-btn" class="tool" type="button" popovertarget="more-menu" title="More" aria-label="More options"><svg><use href="#i-more"/></svg></button>
+        <div id="more-menu" class="menu-list" popover role="group" aria-label="More options">
             <label class="menu-item"><span>Show recently closed</span><input type="checkbox" class="switch" id="show-closed"></label>
             <label class="menu-item"><span>Show all windows</span><input type="checkbox" class="switch" id="all-windows"></label>
             <label class="menu-item"><span>Dock panel on the left</span><input type="checkbox" class="switch" id="dock-left"></label>
             <hr>
             <button type="button" class="menu-item" data-cmd="clear-closed"><svg><use href="#i-broom"/></svg><span>Clear recently closed</span></button>
             <button type="button" class="menu-item" data-cmd="settings"><svg><use href="#i-gear"/></svg><span>Settings</span></button>
-          </div>
-        </details>
+        </div>
       </div>
     </header>
 
@@ -119,7 +117,8 @@
     </footer>
   </div>
 
-  <div id="popover" class="popover" hidden></div>
+  <div id="popover" class="popover" popover></div>
+  <div id="pointer-anchor" aria-hidden="true"></div>
   <div id="toast" class="toast" role="status" hidden></div>
   <div id="live" class="sr-only" aria-live="polite"></div>
 </body>

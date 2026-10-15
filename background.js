@@ -19,7 +19,6 @@ const MAX_CLOSED = 500;
 // survive service-worker restarts; savedTree in storage.local survives browser restarts.
 let state = null;
 let queue = Promise.resolve();
-let holdPersistUntil = 0;
 const claimed = new Set(); // tabs we created ourselves and already placed in the tree
 const suppressClosed = new Set(); // tabs we close on purpose (restores) that shouldn't become ghosts
 
@@ -46,9 +45,12 @@ function remember(tab) {
 
 async function load({ keep } = {}) {
   if (state) return state;
-  const s = await chrome.storage.session.get(['nodes', 'cache']);
+  const s = await chrome.storage.session.get(['nodes', 'cache', 'treeDirty', 'rematchAt']);
   state = { nodes: s.nodes || {}, cache: s.cache || {} };
   await reconcile(!s.nodes, keep);
+  // Work a previous worker scheduled but didn't live to finish.
+  if (s.rematchAt) scheduleRematch(s.rematchAt);
+  if (s.treeDirty) schedulePersist();
   return state;
 }
 
@@ -92,20 +94,33 @@ function dropCrossWindowParents() {
   }
 }
 
+// The restart copy of the tree is written a second after the last change. A service worker
+// can be shut down before a timer fires, so the pending write is also recorded in
+// storage.session (treeDirty) and backed by an alarm, which wakes a stopped worker; whichever
+// runs first writes it and clears both.
+const PERSIST_ALARM = 'persist-tree';
 let persistTimer = null;
-async function save() {
-  await chrome.storage.session.set({ nodes: state.nodes, cache: state.cache });
+
+function schedulePersist(delay = 1000) {
   clearTimeout(persistTimer);
-  persistTimer = setTimeout(() => run(persistTree), 1000);
+  persistTimer = setTimeout(() => run(persistTree), delay);
+  chrome.alarms.create(PERSIST_ALARM, { delayInMinutes: 0.5 });
+}
+
+async function save() {
+  await chrome.storage.session.set({ nodes: state.nodes, cache: state.cache, treeDirty: true });
+  schedulePersist();
   broadcast();
 }
 
 // Mirrors the tree by URL position so it can be rebuilt after a browser restart.
 async function persistTree() {
   if (!state) return;
-  const wait = holdPersistUntil - Date.now();
+  const { treeDirty, persistHoldUntil = 0 } = await chrome.storage.session.get(['treeDirty', 'persistHoldUntil']);
+  if (!treeDirty) return;
+  const wait = persistHoldUntil - Date.now();
   if (wait > 0) {
-    persistTimer = setTimeout(() => run(persistTree), wait);
+    schedulePersist(wait);
     return;
   }
   const tabs = await treeTabs();
@@ -113,8 +128,26 @@ async function persistTree() {
     toEntries(w).map(({ url, parent, collapsed }) => ({ url, parent, collapsed })),
   );
   await chrome.storage.local.set({ savedTree });
+  await chrome.storage.session.set({ treeDirty: false });
+  clearTimeout(persistTimer);
+  await chrome.alarms.clear(PERSIST_ALARM);
 }
 
+// After a browser restart, restored tabs trickle in, so the saved tree is matched again
+// shortly after startup. Recorded in storage.session so a worker restart still runs it.
+let rematchTimer = null;
+function scheduleRematch(at) {
+  clearTimeout(rematchTimer);
+  rematchTimer = setTimeout(
+    () => run(async () => {
+      await reconcile(true);
+      await chrome.storage.session.remove('rematchAt');
+    }),
+    Math.max(0, at - Date.now()),
+  );
+}
+
+// UI refresh only: if this timer is lost the panel's own periodic refresh catches up.
 let broadcastTimer = null;
 function broadcast() {
   clearTimeout(broadcastTimer);
@@ -775,6 +808,7 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'prune-closed') run(async () => getClosed(await getSettings()).then(broadcast));
+  if (alarm.name === PERSIST_ALARM) run(async () => (await load(), persistTree()));
 });
 
 // Reloading or updating Grove unloads its panel page, and Chromium leaves the panel window
@@ -803,8 +837,13 @@ chrome.runtime.onInstalled.addListener(() => {
 // and hold off overwriting it until the session has settled.
 chrome.runtime.onStartup.addListener(() => {
   chrome.storage.local.remove('panelWindows');
-  holdPersistUntil = Date.now() + 10000;
-  run(() => load());
-  setTimeout(() => run(() => reconcile(true)), 5000);
+  const now = Date.now();
+  run(async () => {
+    await chrome.storage.session.set({ persistHoldUntil: now + 10000, rematchAt: now + 5000 });
+    await load();
+    scheduleRematch(now + 5000);
+  });
   setHoudiniBadge();
 });
+
+globalThis.groveTest = { persistTree, schedulePersist, load }; // for tests/e2e.mjs
