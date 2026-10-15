@@ -63,14 +63,20 @@ async function connect() {
   await new Promise((r, j) => ((ws.onopen = r), (ws.onerror = j)));
 }
 
+// Identify Grove's worker by its manifest: Chrome for Testing ships a built-in extension whose
+// worker is also called background.js.
 async function findExtensionId() {
   for (let i = 0; i < 50; i++) {
     const { targetInfos } = await cdp('Target.getTargets');
-    const sw = targetInfos.find((t) => t.type === 'service_worker' && t.url.endsWith('/background.js'));
-    if (sw) return new URL(sw.url).host;
+    for (const t of targetInfos.filter((x) => x.type === 'service_worker' && x.url.startsWith('chrome-extension://'))) {
+      const { sessionId } = await cdp('Target.attachToTarget', { targetId: t.targetId, flatten: true });
+      const r = await cdp('Runtime.evaluate', { expression: 'chrome.runtime.getManifest().short_name', returnByValue: true }, sessionId).catch(() => null);
+      await cdp('Target.detachFromTarget', { sessionId }).catch(() => {});
+      if (r?.result?.value === 'Grove') return new URL(t.url).host;
+    }
     await sleep(200);
   }
-  throw new Error('Extension service worker never started');
+  throw new Error('Grove service worker never started');
 }
 
 async function openPage(url) {
@@ -104,7 +110,10 @@ try {
   for (let i = 0; i < 100; i++) {
     const ready = await evaluate(panel.sessionId, `location.protocol === 'chrome-extension:' && document.readyState === 'complete' && typeof chrome.windows === 'object'`).catch(() => false);
     if (ready) break;
-    if (i === 99) throw new Error('Panel page never finished loading');
+    if (i === 99) {
+      const why = await evaluate(panel.sessionId, `[location.href, document.title, document.readyState, typeof chrome, typeof chrome?.runtime, document.body?.innerText.slice(0, 200)]`).catch((e) => String(e));
+      throw new Error(`Panel page never finished loading: ${JSON.stringify(why)}`);
+    }
     await sleep(150);
   }
   const send = (type, data = {}) =>
