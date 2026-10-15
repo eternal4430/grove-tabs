@@ -146,6 +146,8 @@ function render() {
   $('houdini').setAttribute('aria-pressed', String(state.houdini));
   $('houdini-banner').hidden = !state.houdini;
   $('show-closed').checked = state.settings.showClosed;
+  $('toggle-closed').setAttribute('aria-pressed', String(state.settings.showClosed));
+  $('toggle-closed').title = state.settings.showClosed ? 'Hide recently closed tabs' : 'Show recently closed tabs';
   $('all-windows').checked = state.settings.allWindows;
   $('dock-left').checked = state.settings.side === 'left';
   // A compositor hook (see README) floats and docks this window by its title: the side,
@@ -190,11 +192,15 @@ function render() {
     // Chromium tab groups: a header row opens each run of consecutive rows in one group, and
     // those rows sit in a body with the group's colour rail. A collapsed group hides its rows.
     const groupsById = new Map((win.groups || []).map((g) => [g.id, g]));
+    const itemsById = new Map(items.map((t) => [t.id, t]));
     const runs = new Map();
     let body = group;
     let open = null;
     for (const row of flatten(forest, { expandAll: !!query })) {
-      const gid = groupsById.has(row.tab.groupId) ? row.tab.groupId : -1;
+      // Closed tabs belong to no Chromium group, so a closed child would end its parent's
+      // group early and split it in two; let it follow its parent's group instead.
+      const own = row.tab.ghost ? (itemsById.get(row.tab.parentId)?.groupId ?? -1) : row.tab.groupId;
+      const gid = groupsById.has(own) ? own : -1;
       if (gid !== (open?.id ?? -1)) {
         open = gid >= 0 ? groupsById.get(gid) : null;
         body = group;
@@ -649,6 +655,11 @@ treeEl.addEventListener('dragend', () => {
 
 // Toolbar
 $('new-tab').addEventListener('click', () => act(() => send('newTab', { windowId })));
+
+$('toggle-closed').addEventListener('click', () => {
+  const show = !state.settings.showClosed;
+  act(() => send('setSettings', { patch: { showClosed: show } }), show ? 'Showing recently closed tabs' : 'Recently closed tabs hidden');
+});
 
 $('houdini').addEventListener('click', () => {
   const on = !state.houdini;

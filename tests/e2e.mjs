@@ -432,6 +432,25 @@ try {
     await send('groupUpdate', { groupId: gid, collapsed: false });
     await until(async () => (await dom())?.rows.length === 2, 'expanded again');
 
+    // A closed child of a grouped tab must stay inside the group, not split it in two.
+    const child = await mk('groupchild');
+    await until(async () => (await state()).windows[0].tabs.some((t) => t.id === child && t.title === 'Page groupchild'), 'child tab');
+    await send('move', { tabId: child, targetId: g1, position: 'inside' });
+    await send('close', { tabId: child });
+    const heads = () => evaluate(panel.sessionId, `(() => {
+      const hs = [...document.querySelectorAll('.group-head')].filter((h) => h.querySelector('.group-name').textContent === 'Research');
+      return { headers: hs.length, ghostInBody: !!hs[0]?.nextElementSibling.querySelector('.row.ghost'), ghosts: document.querySelectorAll('.row.ghost').length };
+    })()`);
+    const split = await until(async () => { const h = await heads(); return h.ghostInBody && h; }, 'closed child inside the group');
+    assert.equal(split.headers, 1, 'one Research header, not two');
+
+    // The header toggle hides and shows recently closed tabs.
+    await evaluate(panel.sessionId, `document.getElementById('toggle-closed').click()`);
+    await until(async () => (await heads()).ghosts === 0 && !(await state()).settings.showClosed, 'closed tabs hidden');
+    assert.equal(await evaluate(panel.sessionId, `document.getElementById('toggle-closed').getAttribute('aria-pressed')`), 'false');
+    await evaluate(panel.sessionId, `document.getElementById('toggle-closed').click()`);
+    await until(async () => (await heads()).ghosts > 0, 'closed tabs shown again');
+
     // Right-click menu on a grouped tab, then the editor from the header's "more" button.
     const menu = await evaluate(panel.sessionId, `(() => {
       const row = [...document.querySelectorAll('.row')].find((r) => r.querySelector('.title')?.textContent === 'Page grouptwo');
