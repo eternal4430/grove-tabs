@@ -99,7 +99,14 @@ try {
   const extId = await findExtensionId();
   console.log(`extension ${extId}`);
   const panel = await openPage(`chrome-extension://${extId}/panel.html`);
-  await sleep(500);
+  // Target.createTarget returns before navigation commits; on slower machines (CI) the first
+  // evaluations would otherwise run in the initial about:blank document.
+  for (let i = 0; i < 100; i++) {
+    const ready = await evaluate(panel.sessionId, `location.protocol === 'chrome-extension:' && document.readyState === 'complete' && typeof chrome.windows === 'object'`).catch(() => false);
+    if (ready) break;
+    if (i === 99) throw new Error('Panel page never finished loading');
+    await sleep(150);
+  }
   const send = (type, data = {}) =>
     evaluate(panel.sessionId, `chrome.runtime.sendMessage(${JSON.stringify({ type, ...data })}).then((r) => { if (!r.ok) throw new Error(r.error); return r.result; })`);
   const winId = await evaluate(panel.sessionId, 'chrome.windows.getCurrent().then((w) => w.id)');
