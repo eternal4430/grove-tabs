@@ -525,7 +525,6 @@ function setQuery(value) {
   searchEl.value = value;
   if (value.trim() !== query) focusKey = null; // re-pick: first match, or the active tab
   query = value.trim();
-  $('search-hint').hidden = !!value;
   $('search-clear').hidden = !value;
   render();
 }
