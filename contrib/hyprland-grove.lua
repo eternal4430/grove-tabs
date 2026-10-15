@@ -36,6 +36,15 @@ local function grove_is_panel(w)
   return w ~= nil and w.class ~= nil and w.class:match(GROVE_CLASS) ~= nil
 end
 
+-- set_prop "opacity" with two values only changes the focused one, so set focused and
+-- unfocused opacity (and their override flags) separately. Missing the unfocused one left
+-- the panel invisible whenever the pointer moved off it.
+function grove_set_opacity(sel, active, inactive, override)
+  for prop, value in pairs({ opacity = active, opacity_inactive = inactive, opacity_override = override, opacity_inactive_override = override }) do
+    hl.dispatch(hl.dsp.window.set_prop({ prop = prop, value = value, window = sel }))
+  end
+end
+
 -- Reveal a beat after the move: the new position lands a frame after the dispatch, and
 -- revealing at once can flash the window at its pre-dock spot.
 function grove_reveal(w)
@@ -43,7 +52,7 @@ function grove_reveal(w)
   grove_hidden[w.address] = nil
   local sel = "address:" .. w.address
   hl.timer(function()
-    if hl.get_window(sel) then hl.dispatch(hl.dsp.window.set_prop({ prop = "opacity", value = "0.985 0.96", window = sel })) end
+    if hl.get_window(sel) then grove_set_opacity(sel, "0.985", "0.96", "0") end
   end, { timeout = 60, type = "oneshot" })
 end
 
@@ -56,7 +65,7 @@ local function grove_catch(w)
   grove_hidden[w.address] = true
   local sel = "address:" .. w.address
   if not w.floating then hl.dispatch(hl.dsp.window.float({ action = "set", window = sel })) end
-  hl.dispatch(hl.dsp.window.set_prop({ prop = "opacity", value = "0 override 0 override", window = sel }))
+  grove_set_opacity(sel, "0", "0", "1")
   hl.dispatch(hl.dsp.window.set_prop({ prop = "no_anim", value = "1", window = sel }))
   hl.timer(function()
     local now = hl.get_window(sel)
