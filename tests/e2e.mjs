@@ -461,6 +461,7 @@ try {
       return { items, closed: !p.matches(':popover-open') };
     })()`);
     assert.ok(menu.items.includes('Add to new group') && menu.items.includes('Remove from group'), JSON.stringify(menu.items));
+    assert.ok(menu.items.some((i) => i.startsWith('Nest under tab above')), 'nest item in the tab menu');
     assert.equal(menu.closed, true, 'Escape closes the menu');
     const viaButton = await evaluate(panel.sessionId, `(() => {
       const row = [...document.querySelectorAll('.row')].find((r) => r.querySelector('.title')?.textContent === 'Page grouptwo');
@@ -588,6 +589,65 @@ try {
       write(join(process.env.SHOTS, 'popover-more.png'), Buffer.from((await cdp('Page.captureScreenshot', { format: 'png' }, panel.sessionId)).data, 'base64'));
       await click((btn.left + btn.right) / 2, (btn.top + btn.bottom) / 2);
     }
+  });
+
+  await step('real Alt+Left / Alt+Right keystrokes outdent and indent the highlighted tab', async () => {
+    await cdp('Target.activateTarget', { targetId: panel.targetId });
+    const key = async (k, code, modifiers = 1) => {
+      for (const type of ['rawKeyDown', 'keyUp']) {
+        await cdp('Input.dispatchKeyEvent', { type, key: k, code, windowsVirtualKeyCode: { ArrowLeft: 37, ArrowRight: 39 }[k], modifiers }, panel.sessionId);
+      }
+    };
+    const parentOf = async (id) => (await state()).windows.flatMap((w) => w.tabs).find((t) => t.id === id).parentId;
+    const mk = (n) => evaluate(panel.sessionId, `chrome.tabs.create({ url: '${site('')}' + '${n}', windowId: ${winId}, active: false }).then((t) => t.id)`);
+    const p1 = await mk('kbparent');
+    const c1 = await mk('kbchild');
+    await until(async () => (await state()).windows[0].tabs.some((t) => t.id === c1 && t.title === 'Page kbchild'), 'kb tabs');
+    await send('move', { tabId: c1, targetId: p1, position: 'inside' });
+    assert.equal(await parentOf(c1), p1);
+    const highlight = (id) => evaluate(panel.sessionId, `(async () => {
+      for (let i = 0; i < 40 && !document.querySelector('.row[data-key="${'${id}'}"]'); i++) await new Promise((r) => setTimeout(r, 50));
+      const s = document.getElementById('search'); s.focus(); s.value = 'kbchild'; s.dispatchEvent(new Event('input'));
+      return document.querySelector('.row.cursor')?.dataset.key;
+    })()`.replace("${'${id}'}", String(id)));
+    // 1. From the search box (where focus starts when the panel opens).
+    assert.equal(await highlight(c1), String(c1));
+    await key('ArrowLeft', 'ArrowLeft');
+    await until(async () => (await parentOf(c1)) == null, 'Alt+Left in search to outdent');
+    // 2. Alt+Right re-nests it under the tab above.
+    await key('ArrowRight', 'ArrowRight');
+    await until(async () => (await parentOf(c1)) === p1, 'Alt+Right in search to indent');
+    // 3. With focus on the row itself.
+    await evaluate(panel.sessionId, `(() => { const s = document.getElementById('search'); s.value = ''; s.dispatchEvent(new Event('input')); })()`);
+    await until(() => evaluate(panel.sessionId, `(() => { const r = document.querySelector('.row[data-key="${c1}"]'); if (!r) return false; r.focus(); return document.activeElement === r; })()`), 'row focus');
+    await key('ArrowLeft', 'ArrowLeft');
+    await until(async () => (await parentOf(c1)) == null, 'Alt+Left on a focused row to outdent');
+    assert.equal(await evaluate(panel.sessionId, `location.href.includes('panel.html')`), true, 'the panel did not navigate back');
+    await evaluate(panel.sessionId, `chrome.tabs.remove([${p1}, ${c1}])`);
+  });
+
+  await step('Alt+Left in the overlay outdents instead of navigating the page Back', async () => {
+    const page = await openPage(site('histone'));
+    await cdp('Page.enable', {}, page.sessionId);
+    await until(() => evaluate(page.sessionId, `document.title === 'Page histone'`), 'first page');
+    await evaluate(page.sessionId, `location.href = '${site('histtwo')}'; true`);
+    await until(() => evaluate(page.sessionId, `document.title === 'Page histtwo'`).catch(() => false), 'second page (history to go back to)');
+    await cdp('Target.activateTarget', { targetId: page.targetId });
+    const tab = await until(() => evaluate(panel.sessionId, `chrome.tabs.query({ url: '${site('histtwo')}' }).then((t) => t[0])`), 'hist tab');
+    const parent = (await state()).windows.flatMap((w) => w.tabs).find((t) => t.title === 'Page a');
+    await send('move', { tabId: tab.id, targetId: parent.id, position: 'inside' });
+    const swTarget = (await cdp('Target.getTargets')).targetInfos.find((t) => t.type === 'service_worker' && t.url.includes(extId));
+    const { sessionId: sw } = await cdp('Target.attachToTarget', { targetId: swTarget.targetId, flatten: true });
+    await evaluate(sw, `groveTogglePanel(${JSON.stringify(tab)}).then(() => true)`);
+    const frame = await until(async () => (await cdp('Target.getTargets')).targetInfos.find((t) => t.type === 'iframe' && t.url.includes('mode=overlay')), 'overlay');
+    const { sessionId: fs } = await cdp('Target.attachToTarget', { targetId: frame.targetId, flatten: true });
+    await cdp('Runtime.enable', {}, fs);
+    await until(() => evaluate(fs, `(() => { const s = document.getElementById('search'); if (!s || !document.querySelector('.row')) return false; s.focus(); s.value = 'histtwo'; s.dispatchEvent(new Event('input')); return document.querySelector('.row.cursor')?.dataset.key === '${tab.id}'; })()`), 'overlay cursor on the nested tab');
+    for (const type of ['rawKeyDown', 'keyUp']) await cdp('Input.dispatchKeyEvent', { type, key: 'ArrowLeft', code: 'ArrowLeft', windowsVirtualKeyCode: 37, modifiers: 1 }, fs);
+    await until(async () => (await state()).windows.flatMap((w) => w.tabs).find((t) => t.id === tab.id)?.parentId == null, 'outdent from the overlay');
+    await sleep(500);
+    assert.equal(await evaluate(page.sessionId, `document.title`), 'Page histtwo', 'page did not go Back');
+    await cdp('Target.closeTarget', { targetId: page.targetId });
   });
 
   await step('keyboard navigation and live region in the panel', async () => {
