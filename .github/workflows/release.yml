@@ -1,0 +1,34 @@
+name: release
+
+# Push a tag like v1.3.0 (matching manifest.json's version) to publish a GitHub Release with a
+# ready-to-load zip: the extension's files sit at the top of the archive, so extracting it
+# gives one folder to pick in chrome://extensions -> Load unpacked.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag matches manifest.json
+        run: |
+          v=$(node -p "require('./manifest.json').version")
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "Tag $GITHUB_REF_NAME does not match manifest version $v"; exit 1; }
+
+      - name: Build zip
+        id: pkg
+        run: echo "zip=$(scripts/package.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "${{ steps.pkg.outputs.zip }}" \
+            --title "Grove $GITHUB_REF_NAME" \
+            --notes "Download **$(basename ${{ steps.pkg.outputs.zip }})** below, extract it, then in chrome://extensions turn on Developer mode, click **Load unpacked** and pick the extracted folder (the one containing manifest.json). Don't use GitHub's \"Source code\" downloads; those wrap the files in an extra folder and include tests."

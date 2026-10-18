@@ -4,9 +4,12 @@ A from-scratch Manifest V3 tab manager. It has no build step, no dependencies an
 
 ## Install
 
-1. Open `chrome://extensions` and turn on **Developer mode**.
-2. Click **Load unpacked** and pick this folder.
+1. Download the latest **`grove-<version>.zip`** from [Releases](https://github.com/eternal4430/grove-tabs/releases/latest) (not "Code → Download ZIP" or the "Source code" archives, which wrap everything in an extra folder) and extract it.
+2. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the extracted folder: the one that directly contains `manifest.json`.
+
 3. Pin Grove to the toolbar. Click it, or press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd>, to open the panel.
+
+Working from a clone instead? Pick the repository folder itself in step 2.
 
 **If the shortcut does nothing,** another extension (Bonsai, for one) already holds it. Chromium silently skips a suggested shortcut that's taken. Free it and assign it to Grove's "Open or close the Grove panel" at `chrome://extensions/shortcuts`.
 
